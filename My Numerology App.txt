@@ -1,0 +1,385 @@
+My Numerology App
+================
+
+
+src/app/globals.css
+===================
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 250 70% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 250 70% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 250 70% 65%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 240 5% 95%;
+    --card: 240 4% 8%;
+    --card-foreground: 240 5% 95%;
+    --popover: 240 4% 8%;
+    --popover-foreground: 240 5% 95%;
+    --primary: 250 70% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 15%;
+    --secondary-foreground: 240 5% 95%;
+    --muted: 240 4% 15%;
+    --muted-foreground: 240 4% 55%;
+    --accent: 250 70% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 15%;
+    --input: 240 4% 15%;
+    --ring: 250 70% 65%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+src/app/layout.tsx
+==================
+import type {Metadata} from 'next';
+import './globals.css';
+import { Toaster } from "@/components/ui/toaster";
+
+export const metadata: Metadata = {
+  title: 'Numerology Calculator',
+  description: 'Calculate the numerological value of letters and names.',
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="dark">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      </head>
+      <body className="font-body antialiased">
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+
+src/app/page.tsx
+================
+"use client";
+
+import React, { useState, useMemo } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Separator } from '@/components/ui/separator';
+
+const getLetterValue = (char: string): number => {
+  const upperChar = char.toUpperCase();
+  if (upperChar >= 'A' && upperChar <= 'Z') {
+    const charCode = upperChar.charCodeAt(0);
+    const baseCode = 'A'.charCodeAt(0);
+    // Pythagorean numerology: 1-9 repeating cycle.
+    return ((charCode - baseCode) % 9) + 1;
+  }
+  return 0;
+};
+
+const getReductionSteps = (n: number, text: string): number[] => {
+  if (n === 0 && text.trim() === '') return [];
+
+  const steps: number[] = [n];
+  let currentNum = n;
+  
+  // Master numbers 11, 22, 33 are generally not reduced further in numerology.
+  while (currentNum > 9 && ![11, 22, 33].includes(currentNum)) {
+    currentNum = String(currentNum)
+      .split('')
+      .reduce((sum, digit) => sum + parseInt(digit, 10), 0);
+    steps.push(currentNum);
+  }
+  return steps;
+};
+
+export default function NumerologyCalculatorPage() {
+  const [text, setText] = useState('');
+  
+  const numerologyChartImage = PlaceHolderImages.find(p => p.id === 'numerology-chart');
+
+  const { letterValues, initialSum, reductionSteps } = useMemo(() => {
+    const filteredText = text.replace(/[^a-zA-Z]/g, '');
+    const letterValues = filteredText.split('').map(char => ({
+      char,
+      value: getLetterValue(char),
+    }));
+    
+    const initialSum = letterValues.reduce((acc, { value }) => acc + value, 0);
+    const reductionSteps = getReductionSteps(initialSum, text);
+
+    return { letterValues, initialSum, reductionSteps };
+  }, [text]);
+
+  const finalResult = reductionSteps.length > 0 ? reductionSteps[reductionSteps.length - 1] : 0;
+
+  return (
+    <main className="flex min-h-screen w-full flex-col items-center bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-3xl space-y-10">
+        <header className="text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">Numerology Calculator</h1>
+          <p className="mt-4 text-xl text-muted-foreground">
+            Discover the cosmic vibration of words and names.
+          </p>
+        </header>
+
+        <Textarea
+          placeholder="Enter a name or word..."
+          rows={3}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="w-full resize-none border-2 border-border bg-input p-4 text-lg text-foreground focus:ring-primary/50 focus:ring-2"
+        />
+
+        {numerologyChartImage && (
+          <div className="flex justify-center my-8">
+            <Image
+              src={numerologyChartImage.imageUrl}
+              alt={numerologyChartImage.description}
+              width={500}
+              height={300}
+              className="rounded-xl shadow-2xl shadow-primary/10"
+              data-ai-hint={numerologyChartImage.imageHint}
+              priority
+            />
+          </div>
+        )}
+
+        {text.trim().length > 0 && letterValues.length > 0 && (
+          <div className="space-y-8">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-2xl">Letter Values</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  {letterValues.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2 rounded-lg bg-muted p-2 shadow">
+                      <span className="text-xl font-bold text-foreground">{item.char.toUpperCase()}</span>
+                      <span className="text-sm text-muted-foreground">=</span>
+                      <span className="text-xl font-bold text-primary">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-2xl">Calculation Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Total Sum</h3>
+                  <p className="text-3xl font-bold tracking-tight text-muted-foreground">
+                    {initialSum > 0 ? letterValues.map(lv => lv.value).join(' + ') : '0'} = <span className="text-foreground">{initialSum}</span>
+                  </p>
+                </div>
+                
+                {reductionSteps.length > 1 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Reduction to a Single Digit</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-3xl font-bold tracking-tight">
+                        {reductionSteps.slice(0, -1).map((step, index) => (
+                            <React.Fragment key={index}>
+                                <p className="flex items-baseline gap-1.5 text-muted-foreground">
+                                    {String(step).split('').map((digit, i) => (
+                                        <React.Fragment key={i}>
+                                            <span>{digit}</span>
+                                            {i < String(step).length - 1 && <span className="text-muted-foreground/50 text-xl mx-1">+</span>}
+                                        </React.Fragment>
+                                    ))}
+                                    <span className="text-muted-foreground/50 text-2xl mx-2">=</span> 
+                                    <span className="text-foreground">{reductionSteps[index+1]}</span>
+                                </p>
+                                {index < reductionSteps.length - 2 && <span className="text-muted-foreground text-2xl">→</span>}
+                            </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+                
+                <div className="text-center pt-4">
+                    <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Your Numerology Number</h3>
+                    <p className="text-8xl lg:text-9xl font-black text-primary drop-shadow-[0_0_15px_hsl(var(--primary))]">
+                      {finalResult}
+                    </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+src/lib/placeholder-images.ts
+=============================
+import data from './placeholder-images.json';
+
+export type ImagePlaceholder = {
+  id: string;
+  description: string;
+  imageUrl: string;
+  imageHint: string;
+};
+
+export const PlaceHolderImages: ImagePlaceholder[] = data.placeholderImages;
+
+src/lib/placeholder-images.json
+===============================
+{
+  "placeholderImages": [
+    {
+      "id": "numerology-chart",
+      "description": "A chart showing the Chaldean numerology system letter to number mappings.",
+      "imageUrl": "https://imagizer.imageshack.com/img924/6457/2ibg5g.jpg",
+      "imageHint": "numerology chart"
+    }
+  ]
+}
+
+package.json
+============
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 9002",
+    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
+    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "build": "NODE_ENV=production next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genkit-ai/google-genai": "^1.20.0",
+    "@genkit-ai/next": "^1.20.0",
+    "@hookform/resolvers": "^4.1.3",
+    "@radix-ui/react-accordion": "^1.2.3",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-collapsible": "^1.1.11",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-menubar": "^1.1.6",
+    "@radix-ui/react-popover": "^1.1.6",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-radio-group": "^1.2.3",
+    "@radix-ui/react-scroll-area": "^1.2.3",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slider": "^1.2.3",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.1.3",
+    "@radix-ui/react-tabs": "^1.1.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/react-tooltip": "^1.1.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.5.0",
+    "embla-carousel-react": "^8.6.0",
+    "firebase": "^11.9.1",
+    "genkit": "^1.20.0",
+    "lucide-react": "^0.475.0",
+    "next": "15.3.3",
+    "patch-package": "^8.0.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "genkit-cli": "^1.20.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
