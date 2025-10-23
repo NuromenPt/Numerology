@@ -24,4 +24,4 @@ Be.
 nuromen
 [!/¡]
 
-![Print da app](Images/Screenshot_20251023_162237_Numerology Calculator.png)
+![Print da app](Images/Screenshot_20251023_162237_Numerology_Calculator.png)
