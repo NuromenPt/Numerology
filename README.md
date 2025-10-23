@@ -23,3 +23,5 @@ Take care.
 Be.
 nuromen
 [!/¡]
+
+![Print da app](Images/Screenshot_20251023_162237_Numerology Calculator.png)
