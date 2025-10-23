@@ -11,6 +11,15 @@ And it makes sense, I've created this app in my mobile phone with the help of an
 
 And needed a Numerology app.
 
-nuromen
+The app was created with the help of firebase studio, then I used median.co to create the apk.
 
+the app go grab the image at imagestack
+, this is the only internet trafic that is supposed to do, but I see MB of traffic for an about 20KB image.
+
+At the moment I'm unable to upload all app files, so, I will upload firebase code and the APK, use it at your own risk. 
+
+
+Take care.
+Be.
+nuromen
 [!/¡]
